@@ -17,12 +17,53 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAuthenticatedOrReadOnly
 from rest_framework.decorators import action
 from rest_framework import generics
-from recipes.models import Follow
+from recipes.models import Follow, User
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
+from rest_framework import exceptions
+from users.utils import generate_access_token, generate_refresh_token
+from django.views.decorators.csrf import ensure_csrf_cookie
+from rest_framework.pagination import PageNumberPagination
 
 
-User = get_user_model()
+# User = get_user_model()
+
+
+
+
+# @api_view(['POST'])
+# @permission_classes([AllowAny])
+# @ensure_csrf_cookie
+# def login_view(request):
+#     User = get_user_model()
+#     username = request.data.get('username')
+#     password = request.data.get('password')
+#     response = Response()
+#     if (username is None) or (password is None):
+#         raise exceptions.AuthenticationFailed(
+#             'username and password required')
+
+#     user = User.objects.filter(username=username).first()
+#     if(user is None):
+#         raise exceptions.AuthenticationFailed('user not found')
+#     if (not user.check_password(password)):
+#         raise exceptions.AuthenticationFailed('wrong password')
+
+#     serialized_user = UsersSerializer(user).data
+
+#     access_token = generate_access_token(user)
+#     refresh_token = generate_refresh_token(user)
+
+#     response.set_cookie(key='refreshtoken', value=refresh_token, httponly=True)
+#     response.data = {
+#         'access_token': access_token,
+#         'user': serialized_user,
+#     }
+
+#     return response
+
+
+
 
 
 
@@ -43,15 +84,17 @@ class APIDeleteToken(APIView):
 
 
 class UsersViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
+    #queryset = User.objects.all()
     serializer_class = UsersSerializer
     permission_classes = (IsAuthenticated, AllowAny,)
+    pagination_class = None
 
     @action(methods=['GET'], detail=False,
             permission_classes=[IsAuthenticated, ],
             url_path='me')
     def current_user(self, request):
         queryset = User.objects.all()
+        
         user = get_object_or_404(queryset, username=request.user.username)
         serializer = UsersSerializer(user)
         return Response(serializer.data)
@@ -86,7 +129,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         return [permission() for permission in permission_classes]
 
     def list(self, request):
-        queryset = User.objects.all()
+        queryset = self.queryset
         serializer = UsersSerializer(queryset, many=True)
         my_data = serializer.data
         for item in my_data:
@@ -200,16 +243,16 @@ class UserFollowingViewSet(APIView):
     #                     status=status.HTTP_200_OK)
 
 
-class CustomObtainAuthToken(ObtainAuthToken):
+# class CustomObtainAuthToken(ObtainAuthToken):
     
-    def post(self, request):
-        serializer = CustomAuthTokenSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        email = serializer.validated_data['email']
-        tnp = User.objects.get(email=email)
-        token, created = Token.objects.get_or_create(user=tnp)
-        return Response({
-            'token': token.key,
-            # 'user_id': user.pk,
-            # 'email': user.email
-        })
+#     def post(self, request):
+#         serializer = CustomAuthTokenSerializer(data=request.data)
+#         serializer.is_valid(raise_exception=True)
+#         email = serializer.validated_data['email']
+#         tnp = User.objects.get(email=email)
+#         token, created = Token.objects.get_or_create(user=tnp)
+#         return Response({
+#             'token': token.key,
+#             # 'user_id': user.pk,
+#             # 'email': user.email
+#         })

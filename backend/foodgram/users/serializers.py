@@ -5,11 +5,11 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.validators import UniqueValidator
-from recipes.models import Follow
+from recipes.models import Follow, User
 from django.utils.translation import gettext as _
 from django.contrib.auth import authenticate
 
-User = get_user_model()
+# User = get_user_model()
 
 
 class UsersSerializer(serializers.ModelSerializer):

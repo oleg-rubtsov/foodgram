@@ -4,14 +4,14 @@ from django.db.models.query import QuerySet
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from recipes.models import Tag, Recipe, Ingredient, CHOICES, IngredientRecipe
+from recipes.models import Tag, Recipe, Ingredient, CHOICES, IngredientRecipe, User
 from users.serializers import UsersSerializer
 from base64 import b64decode
 from django.core.files.base import ContentFile
 import base64, uuid, six, imghdr
 
 
-User = get_user_model()
+# User = get_user_model()
 
 
 class Base64ImageField(serializers.ImageField):
@@ -98,6 +98,8 @@ class RecipeReturnSerializer(serializers.ModelSerializer):
     #tags = serializers.SerializerMethodField('get_tags')
     author = UsersSerializer(read_only=True)
     image = Base64ImageField()
+    is_favorited = serializers.BooleanField(default=False)
+    is_in_shopping_cart = serializers.BooleanField(default=False)
 
     def get_ingredients(self, obj):
         queryset = IngredientRecipe.objects.filter(recipe=obj)
@@ -112,7 +114,7 @@ class RecipeReturnSerializer(serializers.ModelSerializer):
     class Meta:     
         model = Recipe
         fields = ('ingredients', 'tags', 'name', 'text',
-                  'author', 'cooking_time', 'image')
+                  'author', 'cooking_time', 'image', 'is_favorited', 'is_in_shopping_cart')
 
 
 
@@ -154,13 +156,13 @@ class RecipeSerializer(serializers.ModelSerializer):
     tags = serializers.PrimaryKeyRelatedField(queryset=Tag.objects.all(), many=True)
     ingredients = IngredientRecipeSerializer(many=True)
     image = Base64ImageField()
-    is_favorited = serializers.BooleanField(default=False)
-    is_in_shopping_cart = serializers.BooleanField(default=False)
+    # is_favorited = serializers.BooleanField(default=False)
+    # is_in_shopping_cart = serializers.BooleanField(default=False)
 
     class Meta:
         model = Recipe
         fields = ('id', 'name', 'image', 'text', 'ingredients', 'author',
-                  'cooking_time', 'tags', 'image', 'is_favorited', 'is_in_shopping_cart')
+                  'cooking_time', 'tags', 'image') # , 'is_favorited', 'is_in_shopping_cart'
         read_only_fields = ('author',)
 
     def create_tags(self, tags, recipe):

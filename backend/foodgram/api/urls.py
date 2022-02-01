@@ -29,6 +29,7 @@ router_v1.register(
 # router.register('tags', TagViewSet, basename='tags')
 
 urlpatterns = [
+    path('',  include('djoser.urls')),
     path('recipes/<int:pk>/favorite/', FavoriteViewSet.as_view()),
     path('recipes/<int:pk>/shopping_cart/', BasketViewSet.as_view()),
     path('', include(router_v1.urls)),

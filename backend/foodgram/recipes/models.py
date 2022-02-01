@@ -1,7 +1,9 @@
+from typing import AbstractSet
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AbstractUser
 
-User = get_user_model()
+# User = get_user_model()
 
 
 CHOICES = (
@@ -12,18 +14,16 @@ CHOICES = (
 
 
 
-# class Tag(models.Model):
-#     name = models.CharField(max_length=200, verbose_name='tag name')
-#     color = models.CharField(max_length=16) # , choices=CHOICES
-#     slug = models.SlugField(unique=True, verbose_name='tag slug')
+class User(AbstractUser):
+    username = models.CharField(max_length=200, verbose_name='name of user', unique=True, blank=True)
+    email = models.EmailField(blank=False, unique=True, verbose_name='email of user') # , choices=CHOICES
+    first_name = models.CharField(max_length=200, verbose_name='name')
+    last_name = models.CharField(max_length=200, verbose_name='name2')
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
 
-#     class Meta:
-#         ordering = ['-name']
-#         verbose_name = 'tag'
-#         verbose_name_plural = 'tags'
-
-#     def __str__(self):
-#         return self.name
+    def __str__(self):
+        return self.username
 
 
 

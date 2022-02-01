@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/2.2/ref/settings/
 """
 
 import os
+from datetime import timedelta
+# from recipes.pagination import PageNumberPagination
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -44,6 +46,7 @@ INSTALLED_APPS = [
     'users',
     'api',
     'recipes',
+    'django_filters',
     'djoser',
     'rest_framework_simplejwt',
     'rest_framework.authtoken',
@@ -117,8 +120,29 @@ REST_FRAMEWORK = {
 
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
-    ]
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'recipes.pagination.CustomPagination',
+    'PAGE_SIZE': 2
+    # 'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend']
+    # 'LIMIT': 1
 }
+
+DJOSER = {
+    # Устанавливаем срок жизни токена
+    'LOGIN_FIELD': 'email',
+    'SERIALIZERS': {
+        'user_create': 'users.serializers.SignupSerializer',
+        'user': 'users.serializers.UsersSerializer',
+        'current_user': 'users.serializers.UsersSerializer',
+    },
+    'PERMISSIONS': {
+        'user': ['djoser.permissions.CurrentUserOrAdminOrReadOnly'],
+        'user_list': ['rest_framework.permissions.AllowAny']
+    },
+    'HIDE_USERS': False,
+}
+
+AUTH_USER_MODEL = 'recipes.User'
 
 # Internationalization
 # https://docs.djangoproject.com/en/2.2/topics/i18n/
