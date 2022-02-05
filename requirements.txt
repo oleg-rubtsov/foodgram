@@ -7,7 +7,10 @@ coreschema==0.0.4
 cryptography==36.0.1
 defusedxml==0.7.1
 Django==2.2.19
+django-appconf==1.0.5
+django-filter==21.1
 django-templated-mail==1.1.1
+django-user-accounts==3.2.0
 djangorestframework==3.13.1
 djangorestframework-simplejwt==4.8.0
 djoser==2.1.0
@@ -17,6 +20,8 @@ itypes==1.2.0
 Jinja2==3.0.3
 MarkupSafe==2.0.1
 oauthlib==3.1.1
+Pillow==8.4.0
+pybase64==1.2.1
 pycparser==2.21
 PyJWT==2.3.0
 python3-openid==3.2.0

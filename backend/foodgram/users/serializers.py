@@ -1,14 +1,10 @@
-from django.core.exceptions import ValidationError
-from django.db.models.fields import EmailField
-from django.shortcuts import get_object_or_404
-from rest_framework import serializers
-from django.contrib.auth import get_user_model
-from django.contrib.auth.password_validation import validate_password
-from rest_framework.validators import UniqueValidator
-from recipes.models import Follow, User, Recipe
-from django.utils.translation import gettext as _
 from django.contrib.auth import authenticate
+from django.contrib.auth.password_validation import validate_password
+from django.shortcuts import get_object_or_404
+from django.utils.translation import gettext as _
+from rest_framework import serializers
 
+from recipes.models import Follow, Recipe, User
 
 
 class RecipeSubscriptionsSerializer(serializers.ModelSerializer):
@@ -20,10 +16,8 @@ class RecipeSubscriptionsSerializer(serializers.ModelSerializer):
         )
 
 
-
 class UsersSerializer(serializers.ModelSerializer):
     is_subscribed = serializers.SerializerMethodField('get_serializer_context')
-
 
     def get_serializer_context(self, obj):
         request = self.context.get('request')
@@ -48,18 +42,16 @@ class SubscriptionsSerializer(serializers.ModelSerializer):
 
     def get_serializer_context(self, obj):
         request = self.context.get('request')
-
-        # print(request.query_params)
         try:
             get_object_or_404(Follow, author=obj, user=request.user)
             return True
         except:
             return False
-    
+
     def get_recipes_count(self, obj):
         recipes_count = Recipe.objects.filter(author=obj).count()
         return recipes_count
-        
+
     def get_recipes(self, obj):
         try:
             request = self.context.get('request')
@@ -71,7 +63,6 @@ class SubscriptionsSerializer(serializers.ModelSerializer):
             queryset = Recipe.objects.filter(author=obj)
             return RecipeSubscriptionsSerializer(queryset, many=True).data
 
-
     class Meta:
         model = User
         fields = (
@@ -81,16 +72,14 @@ class SubscriptionsSerializer(serializers.ModelSerializer):
         )
 
 
-
-
-
-
-
 class SignupSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = User
-
-        fields = ['email', 'username', 'first_name', 'last_name', 'password']
+        fields = [
+            'email', 'username', 'first_name',
+            'last_name', 'password', 'id'
+        ]
         extra_kwargs = {
             'password': {'write_only': True},
             'username': {'required': True},
@@ -98,7 +87,6 @@ class SignupSerializer(serializers.ModelSerializer):
             'last_name': {'required': True},
             'email': {'required': True},
         }
-
 
     def create(self, validated_data):
         user = User(
@@ -131,15 +119,15 @@ class CustomAuthTokenSerializer(serializers.Serializer):
             style={'input_type': 'password'},
             trim_whitespace=False
         )
+
     def validate(self, attrs):
         email = attrs.get('email')
         password = attrs.get('pass')
-
         if email and password:
-
-            user = authenticate(request=self.context.get('request'),
-                                email=email, password=password)
-
+            user = authenticate(
+                request=self.context.get('request'),
+                email=email, password=password
+            )
             if not user:
                 msg = _('Unable to log in with provided credentials.')
                 raise serializers.ValidationError(msg, code='authorization')
