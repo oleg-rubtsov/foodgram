@@ -1,6 +1,7 @@
 # from backend.foodgram.recipes.models import IngredientRecipe
 from webbrowser import get
-from django.db.models.query import QuerySet 
+from django.db.models.query import QuerySet
+from .filter import RecipeFilter 
 from recipes.models import IngredientRecipe
 from recipes.models import Tag, Recipe, Ingredient, Follow, Favorite, Basket, User
 from django.shortcuts import get_object_or_404
@@ -62,63 +63,59 @@ class ReadOnly(BasePermission):
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Tag.objects.all()
     permission_classes = (AllowAny,)
+    serializer_class = TagSerializer
     # pagination_class = PageNumberPagination
-    #pagination_class = None
+    pagination_class = None
+
+
+    
+
 
     def list(self, request):
-        queryset = Tag.objects.all()
+        queryset = self.get_queryset()
         serializer = TagSerializer(queryset, many=True)
         return Response(serializer.data)
 
     def retrieve(self, request, pk=None):
-        queryset = Tag.objects.all()
+        queryset = self.get_queryset()
         tag = get_object_or_404(queryset, pk=pk)
         serializer = TagSerializer(tag)
         return Response(serializer.data)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
-    queryset = Recipe.objects.all()
+    queryset = Recipe.objects.all().order_by('id')
     serializer_class = RecipeSerializer
-    #pagination_class = PageNumberPagination
     permission_classes = (OwnerOrReadOnly,)
-    # throttle_classes = (AnonRateThrottle,)
-    # pagination_class = PageNumberPagination
     pagination_class = PageNumberPagination
-    # @action(methods=['PUT'], detail=False,
-    #         permission_classes=[IsAuthenticated, ])
-    # def recipe_update(self, request, pk):
-    #     queryset = get_object_or_404(Recipe, pk=pk)
-    #     IngredientRecipe.objects.filter(recipe=queryset).delete()
-    #     return self.perform_update(queryset)
-    
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = RecipeFilter
+
+
+
+    # def get_queryset(self):
+    #     # search_param = self.request.query_params
+    #     # if search_param:
+    #     #     queryset = Ingredient.objects.filter(name__istartswith=search_param[0])
+    #     # else:
+    #     #     queryset = Ingredient.objects.all()
+    #     # return queryset
+
+    #     return Recipe.objects.all().order_by('id')
 
     def list(self, request):
-        queryset = Recipe.objects.all()
-        serializer = RecipeListSerializer(queryset, many=True)
-        my_data = serializer.data
-        if request.user:
-            for item in my_data:
-                author = User.objects.get(username=item['author']['username'])
-                recipe = get_object_or_404(Recipe, id=item['id'])
-                item['author']['is_subscribed'] = is_subscribed(request.user, author)
-                item['is_in_shopping_cart'] = is_in_shopping_cart(request.user, recipe)
-                item['is_favorited'] = is_favorited(request.user, recipe)
-
-        return Response(my_data)
+        queryset = self.get_queryset()
+        page = self.paginate_queryset(queryset)
+        serializer_context = {'request': request}
+        serializer = RecipeListSerializer(page, context=serializer_context, many=True)
+        return self.get_paginated_response(serializer.data)
 
     def retrieve(self, request, pk=None):
         queryset = get_object_or_404(Recipe, pk=pk)
-        # ingredient = get_object_or_404(queryset, pk=pk)
         serializer = RecipeListSerializer(queryset)
-        my_data = serializer.data
-        author = User.objects.get(username=my_data['author']['username'])
-        recipe = get_object_or_404(Recipe, id=my_data['id'])
-        my_data['author']['is_subscribed'] = is_subscribed(request.user, author)
-        my_data['is_in_shopping_cart'] = is_in_shopping_cart(request.user, recipe)
-        my_data['is_favorited'] = is_favorited(request.user, recipe)
-        return Response(my_data)
+        return Response(serializer.data)
 
     def perform_create(self, serializer):
 
@@ -126,19 +123,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         serializer.save(author=self.request.user)
-        # queryset = get_object_or_404(Recipe, pk=pk)
-        #IngredientRecipe.objects.filter(recipe=queryset).delete()
-        
-        # tmp.ingredients.delete()
-        # if serializer.instance.author != self.request.user:
-        #     raise PermissionDenied('Изменение чужого контента запрещено!')
-        # super(RecipeViewSet, self).perform_update(serializer)
-        # queryset = get_object_or_404(Recipe, pk=pk)
 
-        #serializer = RecipeSerializer(queryset)
-        # serializer.is_valid()
-        #return Response(serializer.data)
-        # serializer.save(author=self.request.user)
 
     def get_permissions(self):
         if self.action == 'retrieve':
@@ -150,7 +135,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         recipe = get_object_or_404(Recipe, pk=pk)
 
         try:
-            # IngredientRecipe.objects.filter(recipe=recipe).delete()
             Recipe.objects.filter(pk=pk).delete()
 
             return Response(status=status.HTTP_204_NO_CONTENT)
@@ -177,11 +161,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
                     tmp = ingredient.amount
 
                 value.update({name: tmp})
-        # out = open('out.txt', 'w')
-        # for key, val in value.items():
-        #     out.write('{}:{}\n'.format(key, val))
-        # out.close()
-        # out = open('out.txt', 'r')
         output = ''
         for key, val in value.items():
             output += f'{key} - {val}\n'
@@ -193,29 +172,23 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Ingredient.objects.all()
+    #queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     permission_classes = (AllowAny,)
-    #pagination_class = None
-    # filter_backends = (filters.SearchFilter,)
-    # search_fields = ['^name',]
-    pagination_class = CustomPagination
+    pagination_class = None
+    # filter_backends = (DjangoFilterBackend,)
+    # filterset_class = IngredientFilter
 
-    def list(self, request):
-        #querysget_queryset()
-        serializer = IngredientSerializer(self.queryset, many=True)
-        return Response(serializer.data)
 
-    def retrieve(self, request, pk=None):
-        queryset = self.get_queryset()
-        ingredient = get_object_or_404(queryset, pk=pk)
-        serializer = IngredientSerializer(ingredient)
-        return Response(serializer.data)
-    
+
     def get_queryset(self):
-        ingredients = Ingredient.objects.all()
-        return ingredients
-
+        search_param = self.request.query_params.get('name')
+        if search_param:
+            queryset = Ingredient.objects.filter(name__istartswith=search_param[0])
+        else:
+            queryset = Ingredient.objects.all()
+        return queryset
+    
 
 
 class FavoriteViewSet(APIView):

@@ -4,7 +4,7 @@ from django.db.models.query import QuerySet
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from recipes.models import Tag, Recipe, Ingredient, CHOICES, IngredientRecipe, User
+from recipes.models import Tag, Recipe, Ingredient, CHOICES, IngredientRecipe, User, Favorite, Basket
 from users.serializers import UsersSerializer
 from base64 import b64decode
 from django.core.files.base import ContentFile
@@ -124,18 +124,36 @@ class RecipeListSerializer(serializers.ModelSerializer):
     # images = Base64Conventor
     # tags = serializers.SerializerMethodField('get_tags')
     tags = TagSerializer(many=True, read_only=True)
-    author = UsersSerializer(read_only=True)
+    author = serializers.SerializerMethodField('get_author')
     image = Base64ImageField()
-    is_favorited = serializers.BooleanField(default=False)
-    is_in_shopping_cart = serializers.BooleanField(default=False)
+    is_favorited = serializers.SerializerMethodField('get_favorited')
+    is_in_shopping_cart = serializers.SerializerMethodField('get_in_shopping_cart')
 
     def get_ingredients(self, obj):
         queryset = IngredientRecipe.objects.filter(recipe=obj)
         return IngredientRecipeListSerializer(queryset, many=True).data
     
-    # def get_tags(self, obj):
-    #     queryset = obj.tags
-    #     return TagSerializer(queryset, many=True).data
+    def get_favorited(self, obj):
+        request = self.context.get('request')
+        try:
+            get_object_or_404(Favorite, user=request.user, recipe=obj)
+            return True
+        except:
+            return False
+
+    def get_in_shopping_cart(self, obj):
+        request = self.context.get('request')
+        try:
+            get_object_or_404(Basket, user=request.user, recipe=obj)
+            return True
+        except:
+            return False
+
+    def get_author(self, obj):
+        request = self.context.get('request')
+        serializer_context = {'request': request}
+        return UsersSerializer(obj.author, context=serializer_context).data
+    
 
     class Meta:     
         model = Recipe

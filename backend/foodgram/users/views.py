@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from django.db.models.query_utils import Q
 from django.shortcuts import get_object_or_404
-from .serializers import UsersSerializer, SignupSerializer, ChangePasswordSerializer, CustomAuthTokenSerializer # , UserFollowingSerializer, UserFollowersSerializer
+from .serializers import SubscriptionsSerializer, UsersSerializer, SignupSerializer, ChangePasswordSerializer, CustomAuthTokenSerializer # , UserFollowingSerializer, UserFollowersSerializer
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
@@ -24,46 +24,7 @@ from rest_framework import exceptions
 from users.utils import generate_access_token, generate_refresh_token
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework.pagination import PageNumberPagination
-
-
-# User = get_user_model()
-
-
-
-
-# @api_view(['POST'])
-# @permission_classes([AllowAny])
-# @ensure_csrf_cookie
-# def login_view(request):
-#     User = get_user_model()
-#     username = request.data.get('username')
-#     password = request.data.get('password')
-#     response = Response()
-#     if (username is None) or (password is None):
-#         raise exceptions.AuthenticationFailed(
-#             'username and password required')
-
-#     user = User.objects.filter(username=username).first()
-#     if(user is None):
-#         raise exceptions.AuthenticationFailed('user not found')
-#     if (not user.check_password(password)):
-#         raise exceptions.AuthenticationFailed('wrong password')
-
-#     serialized_user = UsersSerializer(user).data
-
-#     access_token = generate_access_token(user)
-#     refresh_token = generate_refresh_token(user)
-
-#     response.set_cookie(key='refreshtoken', value=refresh_token, httponly=True)
-#     response.data = {
-#         'access_token': access_token,
-#         'user': serialized_user,
-#     }
-
-#     return response
-
-
-
+import pdb
 
 
 
@@ -84,42 +45,29 @@ class APIDeleteToken(APIView):
 
 
 class UsersViewSet(viewsets.ModelViewSet):
-    #queryset = User.objects.all()
+    queryset = User.objects.all().order_by('id')
     serializer_class = UsersSerializer
     permission_classes = (IsAuthenticated, AllowAny,)
-    pagination_class = None
 
     @action(methods=['GET'], detail=False,
             permission_classes=[IsAuthenticated, ],
             url_path='me')
     def current_user(self, request):
-        queryset = User.objects.all()
-        
+        queryset = User.objects.all().order_by('id')
+        serializer_context = {'request': request}
         user = get_object_or_404(queryset, username=request.user.username)
-        serializer = UsersSerializer(user)
+        serializer = UsersSerializer(user, context=serializer_context)
         return Response(serializer.data)
-    
+
 
     @action(methods=['GET'], detail=False,
-            permission_classes=[IsAuthenticated, ],
-            url_path='subscriptions')
+            permission_classes=[IsAuthenticated, ])
     def subscriptions(self, request):
-        followers = Follow.objects.filter(user=request.user)
-        follower_list = []
-        for item in followers:
-            humon = item.author.username
-            follower_list.append(humon)
-        queryset = User.objects.filter(username__in=follower_list)
-        # user = get_object_or_404(queryset, username=request.user.username)
-        serializer = UsersSerializer(queryset, many=True)
-        my_data = serializer.data
-        for item in my_data:
-            item['is_subscribed'] = True
-        #my_data.save()
-        return Response(my_data)
-
-
-
+        queryset = User.objects.filter(following__user=request.user)
+        page = self.paginate_queryset(queryset)
+        serializer_context = {'request': request}
+        serializer = SubscriptionsSerializer(page, context=serializer_context, many=True)
+        return self.get_paginated_response(serializer.data)
     
     def get_permissions(self):
         if self.action == 'list' or self.action == 'create':
@@ -129,18 +77,11 @@ class UsersViewSet(viewsets.ModelViewSet):
         return [permission() for permission in permission_classes]
 
     def list(self, request):
-        queryset = self.queryset
-        serializer = UsersSerializer(queryset, many=True)
-        my_data = serializer.data
-        for item in my_data:
-            try:
-                tmp = User.objects.get(username=item['username'])
-                get_object_or_404(Follow, author=tmp, user=request.user)
-                item['is_subscribed'] = True
-            except:
-                item['is_subscribed'] = False
-
-        return Response(my_data)
+        queryset = self.get_queryset()
+        page = self.paginate_queryset(queryset)
+        serializer_context = {'request': request}
+        serializer = UsersSerializer(page, context=serializer_context, many=True)
+        return self.get_paginated_response(serializer.data)
 
     def create(self, request):
         if request.user.is_authenticated:
@@ -155,25 +96,16 @@ class UsersViewSet(viewsets.ModelViewSet):
 
     def retrieve(self, request, pk=None):
         if request.user.is_authenticated:
-            queryset = User.objects.all()
+            queryset = User.objects.all().order_by('id')
+            serializer_context = {'request': request}
             user = get_object_or_404(queryset, pk=pk)
-
-            serializer = UsersSerializer(user)
-            my_data = serializer.data
-            try:
-                get_object_or_404(Follow, author=user, user=request.user)
-                my_data['is_subscribed'] = True
-            except:
-                my_data['is_subscribed'] = False
-            return Response(my_data)
+            serializer = UsersSerializer(user, context=serializer_context)
+            return Response(serializer.data)
         else:
             return Response({"detail": ("Учетные данные не были предоставлены.")},
                             status=status.HTTP_401_UNAUTHORIZED)
     
 class UpdatePassword(APIView):
-    """
-    An endpoint for changing password.
-    """
     permission_classes = (IsAuthenticated, )
 
     def get_object(self, queryset=None):
@@ -256,3 +188,39 @@ class UserFollowingViewSet(APIView):
 #             # 'user_id': user.pk,
 #             # 'email': user.email
 #         })
+
+
+class SubscriptionViewSet(APIView):
+    pagination_class = None
+    #queryset = User.objects.all()
+    # serializer_class = UsersSerializer
+    permission_classes = (IsAuthenticated)
+
+    def get(self, request, format=None):
+        usernames = [user.username for user in User.objects.all()]
+        return Response(usernames)
+
+    @action(methods=['GET'], detail=False,
+            permission_classes=[IsAuthenticated, ],
+            url_path='me')
+    def subscriptions(self, request):
+        followers = Follow.objects.filter(user=request.user)
+        follower_list = []
+        for item in followers:
+            humon = item.author.username
+            follower_list.append(humon)
+        queryset = User.objects.filter(username__in=follower_list)
+        # user = get_object_or_404(queryset, username=request.user.username)    
+        #pdb.set_trace()
+        page = self.paginate_queryset(queryset)
+        serializer_context = {'request': request}
+        serializer = UsersSerializer(page, context=serializer_context, many=True)
+
+    # #     serializer = UsersSerializer(queryset, many=True)
+    # #     my_data = serializer.data
+    # #     for item in my_data:
+    # #         item['is_subscribed'] = True
+    # #     #my_data.save()
+    # #   return self.get_paginated_response(my_data)
+
+

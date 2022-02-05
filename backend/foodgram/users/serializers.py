@@ -5,32 +5,33 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.validators import UniqueValidator
-from recipes.models import Follow, User
+from recipes.models import Follow, User, Recipe
 from django.utils.translation import gettext as _
 from django.contrib.auth import authenticate
 
-# User = get_user_model()
+
+
+class RecipeSubscriptionsSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Recipe
+        fields = (
+            'id', 'name', 'image', 'cooking_time'
+        )
+
 
 
 class UsersSerializer(serializers.ModelSerializer):
-    # following = serializers.SerializerMethodField()
-    # followers = serializers.SerializerMethodField()
-    #is_subscribed = serializers.SerializerMethodField('get_serializer_context')
-    is_subscribed = serializers.BooleanField(default=False)
-    # def save(self):
-    #     is_subscribed = self.validated_data['is_subscribed']
-    #     # message = self.validated_data['message']
-    #     # send_email(from=email, message=message) 
+    is_subscribed = serializers.SerializerMethodField('get_serializer_context')
 
-    # def get_serializer_context(self, obj):
-    #     return False
 
-    # def get_serializer_context(self, obj):
-    #     followed = self.context.get("followed")
-    #     if self.data in followed.user:
-    #         return {'is_subscribed': True}
-    #     else:
-    #         return {'is_subscribed': False}
+    def get_serializer_context(self, obj):
+        request = self.context.get('request')
+        try:
+            get_object_or_404(Follow, author=obj, user=request.user)
+            return True
+        except:
+            return False
 
     class Meta:
         model = User
@@ -39,11 +40,49 @@ class UsersSerializer(serializers.ModelSerializer):
             'last_name', 'is_subscribed'
         )
 
-    # def get_following(self, obj):
-    #     return UserFollowingSerializer(obj.following.all(), many=True).data
 
-    # def get_followers(self, obj):
-    #     return UserFollowersSerializer(obj.followers.all(), many=True).data
+class SubscriptionsSerializer(serializers.ModelSerializer):
+    is_subscribed = serializers.SerializerMethodField('get_serializer_context')
+    recipes = serializers.SerializerMethodField('get_recipes')
+    recipes_count = serializers.SerializerMethodField('get_recipes_count')
+
+    def get_serializer_context(self, obj):
+        request = self.context.get('request')
+
+        # print(request.query_params)
+        try:
+            get_object_or_404(Follow, author=obj, user=request.user)
+            return True
+        except:
+            return False
+    
+    def get_recipes_count(self, obj):
+        recipes_count = Recipe.objects.filter(author=obj).count()
+        return recipes_count
+        
+    def get_recipes(self, obj):
+        try:
+            request = self.context.get('request')
+            query_params = request.query_params
+            recipes_limit = int(query_params['recipes_limit'][0])
+            queryset = Recipe.objects.filter(author=obj)[:recipes_limit]
+            return RecipeSubscriptionsSerializer(queryset, many=True).data
+        except:
+            queryset = Recipe.objects.filter(author=obj)
+            return RecipeSubscriptionsSerializer(queryset, many=True).data
+
+
+    class Meta:
+        model = User
+        fields = (
+            'id', 'username', 'email', 'first_name',
+            'last_name', 'is_subscribed', 'recipes_count',
+            'recipes'
+        )
+
+
+
+
 
 
 
@@ -74,54 +113,12 @@ class SignupSerializer(serializers.ModelSerializer):
 
 
 class ChangePasswordSerializer(serializers.Serializer):
-    """
-    Serializer for password change endpoint.
-    """
     current_password = serializers.CharField(required=True)
     new_password = serializers.CharField(required=True)
 
     def validate_new_password(self, value):
         validate_password(value)
         return value
-
-
-# class UserFollowingSerializer(serializers.ModelSerializer):
-
-#     class Meta:
-#         model = Follow
-#         fields = ("id", "author")
-
-
-# class UserFollowersSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Follow
-#         fields = ("id", "user")
-
-# class FollowSerializer(serializers.ModelSerializer):
-#     user = serializers.SlugRelatedField(
-#         queryset=User.objects.all(),
-#         slug_field='username',
-#         default=serializers.CurrentUserDefault()
-#     )
-#     following = SlugRelatedField(
-#         slug_field='username',
-#         queryset=User.objects.all()
-#     )
-
-#     class Meta:
-#         fields = ['user', 'following']
-#         model = Follow
-#         validators = [
-#             UniqueTogetherValidator(
-#                 queryset=Follow.objects.all(),
-#                 fields=['following', 'user']
-#             )
-#         ]
-
-#     def validate_following(self, value):
-#         if self.context['request'].user == value:
-#             raise serializers.ValidationError('Вы уже подписаны!')
-#         return value
 
 
 class CustomAuthTokenSerializer(serializers.Serializer):
@@ -143,9 +140,6 @@ class CustomAuthTokenSerializer(serializers.Serializer):
             user = authenticate(request=self.context.get('request'),
                                 email=email, password=password)
 
-            # The authenticate call simply returns None for is_active=False
-            # users. (Assuming the default ModelBackend authentication
-            # backend.)
             if not user:
                 msg = _('Unable to log in with provided credentials.')
                 raise serializers.ValidationError(msg, code='authorization')
