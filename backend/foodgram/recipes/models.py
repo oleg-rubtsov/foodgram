@@ -1,18 +1,27 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from .validators import validate_even
+from autoslug import AutoSlugField
+from django.utils.text import slugify
 
 
 class User(AbstractUser):
     username = models.CharField(
-        max_length=200, verbose_name='name of user', unique=True, blank=True
+        max_length=200, verbose_name='user_username', unique=True, blank=True
     )
     email = models.EmailField(
-        blank=False, unique=True, verbose_name='email of user'
+        blank=False, unique=True, verbose_name='user_email'
     )
-    first_name = models.CharField(max_length=200, verbose_name='name')
-    last_name = models.CharField(max_length=200, verbose_name='name2')
+    first_name = models.CharField(
+        max_length=200, verbose_name='user_first_name'
+    )
+    last_name = models.CharField(max_length=200, verbose_name='user_last_name')
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
+
+    class Meta:
+        verbose_name = 'user'
+        verbose_name_plural = 'users'
 
     def __str__(self):
         return self.username
@@ -20,10 +29,10 @@ class User(AbstractUser):
 
 class Ingredient(models.Model):
     name = models.CharField(
-        max_length=50, verbose_name='ingredient name', unique=True
+        max_length=50, verbose_name='ingredient_name', unique=True
     )
     measurement_unit = models.CharField(
-        max_length=50, verbose_name='measure name'
+        max_length=50, verbose_name='ingredient_measure'
     )
 
     class Meta:
@@ -35,30 +44,54 @@ class Ingredient(models.Model):
 
 
 class IngredientRecipe(models.Model):
-    ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
-    recipe = models.ForeignKey("Recipe", on_delete=models.CASCADE)
-    amount = models.FloatField(max_length=10)
+    ingredient = models.ForeignKey(
+        Ingredient, on_delete=models.CASCADE,
+        related_name='ingredients_ir'
+    )
+    recipe = models.ForeignKey(
+        "Recipe", on_delete=models.CASCADE,
+        related_name='ingredient_recipe'
+    )
+    amount = models.FloatField(
+        max_length=10,
+        verbose_name='IngredientRecipe_amount'
+    )
+
+    class Meta:
+        verbose_name = 'IngredientRecipe'
+        verbose_name_plural = 'IngredientRecipes'
 
     def __str__(self):
         return f'{self.ingredient} {self.recipe}'
 
 
 class Recipe(models.Model):
-    name = models.CharField(max_length=50)
+    name = models.CharField(max_length=50, verbose_name='Recipe_name')
     image = models.ImageField(
-        upload_to='recipes/images/', blank=True, null=True
+        upload_to='recipes/images/', blank=True,
+        null=True, verbose_name='Recipe_image'
     )
-    text = models.CharField(max_length=200)
+    text = models.CharField(max_length=200, verbose_name='Recipe_text')
     author = models.ForeignKey(
         User, related_name='recipes', on_delete=models.CASCADE)
     ingredients = models.ManyToManyField(
-        Ingredient, through='IngredientRecipe'
+        Ingredient, through='IngredientRecipe', related_name='recipes'
     )
-    cooking_time = models.FloatField()
-    pub_date = models.DateTimeField("date published", auto_now_add=True)
-
+    cooking_time = models.IntegerField(
+        validators=[validate_even], verbose_name='Recipe_cooking_time'
+    )
+    pub_date = models.DateTimeField(
+        "date published", auto_now_add=True
+    )
+    tags = models.ManyToManyField(
+        'Tag',
+        related_name="recipe",
+        related_query_name="recipes"
+    )
 
     class Meta:
+        verbose_name = 'Recipe'
+        verbose_name_plural = 'Recipes'
         ordering = ['-pub_date']
 
     def get_ingredients(self):
@@ -76,16 +109,18 @@ class Recipe(models.Model):
 
 
 class Tag(models.Model):
-    recipe_name = models.ManyToManyField(
-        Recipe,
-        related_name="tags",
-        related_query_name="tag"
-    )
-    name = models.CharField(max_length=200, verbose_name='tag name')
-    color = models.CharField(max_length=16)
+    # recipe_name = models.ManyToManyField(
+    #     Recipe,
+    #     related_name="tags",
+    #     related_query_name="tag"
+    # )
+    name = models.CharField(max_length=200, verbose_name='tag_name')
+    color = models.CharField(max_length=16, verbose_name='tag_color')
     slug = models.SlugField(unique=True, verbose_name='tag_slug')
 
     class Meta:
+        verbose_name = 'Tag'
+        verbose_name_plural = 'Tags'
         ordering = ['-name']
 
     def __str__(self):
@@ -103,10 +138,12 @@ class Follow(models.Model):
     )
 
     class Meta:
+        verbose_name = 'Follow'
+        verbose_name_plural = 'Follows'
         constraints = [
             models.UniqueConstraint(
                 fields=['user', 'author'],
-                name='unique_object'
+                name='unique_object_follow'
             ),
         ]
 
@@ -125,10 +162,12 @@ class Favorite(models.Model):
     )
 
     class Meta:
+        verbose_name = 'Favorite'
+        verbose_name_plural = 'Favorites'
         constraints = [
             models.UniqueConstraint(
                 fields=['user', 'recipe'],
-                name='unique_object'
+                name='unique_object_favorite'
             ),
         ]
 
@@ -147,10 +186,12 @@ class Basket(models.Model):
     )
 
     class Meta:
+        verbose_name = 'Basket'
+        verbose_name_plural = 'Baskets'
         constraints = [
             models.UniqueConstraint(
                 fields=['user', 'recipe'],
-                name='unique_object'
+                name='unique_object_basket'
             ),
         ]
 

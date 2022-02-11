@@ -7,7 +7,7 @@ SECRET_KEY = '$0^32ej#m=x%y%d@kz9%vrn5c2*#rb!+_-$1cixagfjapzmwc&'
 
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_EMAIL_REQUIRED = True
@@ -60,12 +60,25 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'foodgram.wsgi.application'
 
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': os.environ.get('DB_ENGINE', default='django.db.backends.postgresql'),
+        'NAME': os.environ.get('DB_NAME', default=None),
+        'USER': os.environ.get('POSTGRES_USER', default=None),
+        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', default=None),
+        'HOST': os.environ.get('DB_HOST', default=None),
+        'PORT': os.environ.get('DB_PORT', default=None)
     }
 }
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+#     }
+# }
+
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -120,8 +133,10 @@ USE_L10N = True
 
 USE_TZ = True
 
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+
 STATIC_URL = '/static/'
 
-MEDIA_ROOT = '../../media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 MEDIA_URL = '/media/'

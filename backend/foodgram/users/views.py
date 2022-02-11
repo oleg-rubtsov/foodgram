@@ -127,7 +127,7 @@ class UpdatePassword(APIView):
 class UserFollowingViewSet(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def post(self, request, pk):
+    def get(self, request, pk):
         author = get_object_or_404(User, pk=pk)
         try:
             Follow.objects.get(user=request.user, author=author)

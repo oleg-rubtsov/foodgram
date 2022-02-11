@@ -33,7 +33,7 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all().order_by('-pub_date')
-    filter_backends = (DjangoFilterBackend)
+    filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
 
     def get_serializer_class(self):
@@ -74,20 +74,22 @@ class RecipeViewSet(viewsets.ModelViewSet):
             url_path='download_shopping_cart')
     def download_basket(self, request):
         baskets = Basket.objects.filter(user=request.user)
+        recipes = [basket.recipe for basket in baskets]
+        ingredient_recipe_objects = IngredientRecipe.objects.filter(
+            recipe__in=recipes
+        )
         value = {}
-        for basket in baskets:
-            ingredients = IngredientRecipe.objects.filter(recipe=basket.recipe)
-            for ingredient in ingredients:
-                name = (
-                    f'{ingredient.ingredient.name} '
-                    f'({ingredient.ingredient.measurement_unit})'
-                )
-                tmp = value.get(name)
-                if tmp is not None:
-                    tmp = tmp + ingredient.amount
-                else:
-                    tmp = ingredient.amount
-                value.update({name: tmp})
+        for ingredient_r_o in ingredient_recipe_objects:
+            name = (
+                f'{ingredient_r_o.ingredient.name} '
+                f'({ingredient_r_o.ingredient.measurement_unit})'
+            )
+            tmp = value.get(name)
+            if tmp is not None:
+                tmp = tmp + ingredient_r_o.amount
+            else:
+                tmp = ingredient_r_o.amount
+            value.update({name: tmp})
         output = ''
         for key, val in value.items():
             output += f'{key} - {val}\n'
@@ -117,7 +119,7 @@ class FavoriteViewSet(APIView):
     permission_classes = (IsAuthenticated,)
     pagination_class = PageNumberPagination
 
-    def post(self, request, pk):
+    def get(self, request, pk):
         recipe = get_object_or_404(Recipe, pk=pk)
         try:
             Favorite.objects.get(user=request.user, recipe=recipe)
@@ -143,7 +145,7 @@ class BasketViewSet(APIView):
     permission_classes = (IsAuthenticated,)
     pagination_class = PageNumberPagination
 
-    def post(self, request, pk):
+    def get(self, request, pk):
         recipe = get_object_or_404(Recipe, pk=pk)
         try:
             Basket.objects.get(user=request.user, recipe=recipe)

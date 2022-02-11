@@ -16,7 +16,7 @@ class RecipeAdmin(admin.ModelAdmin):
         "cooking_time", "get_ingredients", "get_tags",
         "pub_date", "get_favorite_count"
     )
-    list_filter = ("author", "name", "tag")
+    list_filter = ("author", "name", "tags")
     search_fields = ("name",)
     empty_value_display = "-пусто-"
 
