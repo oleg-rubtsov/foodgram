@@ -11,6 +11,7 @@ services:
       - "5432:5432"
 
   backend:
+    # images: nabedrd/infra_backend:version1.0
     build:
       context: ../backend/foodgram/
       dockerfile: Dockerfile
@@ -24,6 +25,7 @@ services:
       - ./.env
 
   frontend:
+    # images: nabedrd/infra_frontend:version1.0
     build:
       context: ../frontend
       dockerfile: Dockerfile

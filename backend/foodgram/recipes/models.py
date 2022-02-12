@@ -29,7 +29,7 @@ class User(AbstractUser):
 
 class Ingredient(models.Model):
     name = models.CharField(
-        max_length=50, verbose_name='ingredient_name', unique=True
+        max_length=100, verbose_name='ingredient_name'
     )
     measurement_unit = models.CharField(
         max_length=50, verbose_name='ingredient_measure'

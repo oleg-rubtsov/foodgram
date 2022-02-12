@@ -1,5 +1,11 @@
 ## «Продуктовый помощник»: сайт, на котором пользователи будут публиковать рецепты, добавлять чужие рецепты в избранное и подписываться на публикации других авторов. Сервис «Список покупок» позволит пользователям создавать список продуктов, которые нужно купить для приготовления выбранных блюд.
 
+Адрес сайта: http://62.84.120.70/recipes
+Логин и пароль администратора:
+nabedrd@gmail.com
+456456456ol
+
+
 ## Технологии:
 
 - Django Rest Framework
@@ -77,9 +83,13 @@ docker-compose up
 ```
 Миграция, сбор статики и создание супер-пользователя:
 ```sh
-docker-compose exec infra_backend_1 python manage.py migrate
-docker-compose exec infra_backend_1 python manage.py createsuperuser
-docker-compose exec infra_backend_1 python manage.py collectstatic --no-input
+docker exec -it infra_backend_1 bash
+python manage.py migrate
+python manage.py createsuperuser
+```
+Заполнение базы тестовыми данными:
+```sh
+python manage.py loadjson --path /app/data/
 ```
 # Created by:
 
