@@ -49,7 +49,7 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 class IngredientRecipeSerializer(serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
-    amount = serializers.FloatField()
+    amount = serializers.IntegerField()
 
     class Meta:
         model = IngredientRecipe
@@ -135,6 +135,16 @@ class RecipeSerializer(serializers.ModelSerializer):
     )
     ingredients = IngredientRecipeSerializer(many=True)
     image = Base64ImageField()
+
+    def validate(self, data):
+        for item in data['ingredients']:
+            if item['amount'] < 1:
+                ingredient = item['id']
+                raise serializers.ValidationError(
+                    f'Некорректное количество для '
+                    f'ингредиента - {ingredient.name}. Минимум 1.'
+                )
+        return data
 
     class Meta:
         model = Recipe

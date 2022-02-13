@@ -62,6 +62,7 @@ pip install -r requirements.txt
 
 ```
 python manage.py migrate
+python manage.py load_ingredients_and_tags --path ./data/
 ```
 Запустить проект:
 
@@ -83,13 +84,12 @@ docker-compose up
 ```
 Миграция, сбор статики и создание супер-пользователя:
 ```sh
-docker exec -it infra_backend_1 bash
-python manage.py migrate
-python manage.py createsuperuser
+sudo docker exec infra_backend_1 python manage.py migrate
+sudo docker exec -it infra_backend_1 python manage.py createsuperuser
 ```
 Заполнение базы тестовыми данными:
 ```sh
-python manage.py loadjson --path /app/data/
+sudo docker exec infra_backend_1 python manage.py load_ingredients_and_tags
 ```
 # Created by:
 

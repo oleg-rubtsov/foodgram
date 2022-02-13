@@ -12,7 +12,7 @@ from rest_framework.views import APIView
 from recipes.models import (Basket, Favorite, Ingredient, IngredientRecipe,
                             Recipe, Tag)
 
-from .filter import RecipeFilter
+from .filter import IngredientSearchFilter, RecipeFilter
 from .permissions import OwnerOrReadOnly
 from .serializers import (FavoriteSerializer, IngredientSerializer,
                           RecipeListSerializer, RecipeSerializer,
@@ -100,19 +100,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = IngredientSerializer
+    queryset = Ingredient.objects.all()
     permission_classes = (AllowAny,)
+    serializer_class = IngredientSerializer
+    filter_backends = [IngredientSearchFilter]
+    search_fields = ('^name',)
     pagination_class = None
-
-    def get_queryset(self):
-        search_param = self.request.query_params.get('name')
-        if search_param:
-            queryset = Ingredient.objects.filter(
-                name__istartswith=search_param[0]
-            )
-        else:
-            queryset = Ingredient.objects.all()
-        return queryset
 
 
 class FavoriteViewSet(APIView):

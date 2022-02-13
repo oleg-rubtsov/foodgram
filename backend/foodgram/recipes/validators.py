@@ -8,3 +8,4 @@ def validate_even(value):
             _('%(value)s некорректное время приготовления. Минимум 1.'),
             params={'value': value},
         )
+

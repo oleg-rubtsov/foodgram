@@ -1,5 +1,6 @@
 from django_filters import rest_framework as filters
 from django_filters.widgets import BooleanWidget
+from rest_framework.filters import SearchFilter
 
 from recipes.models import Recipe
 
@@ -29,3 +30,7 @@ class RecipeFilter(filters.FilterSet):
     class Meta:
         model = Recipe
         fields = ['is_favorited', 'tags', 'is_in_shopping_cart', 'author']
+
+
+class IngredientSearchFilter(SearchFilter):
+    search_param = 'name'

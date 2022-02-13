@@ -1,3 +1,4 @@
+from email.policy import default
 import json
 
 from django.core.management.base import BaseCommand
@@ -8,7 +9,9 @@ from recipes.models import Ingredient, Tag
 class Command(BaseCommand):
 
     def add_arguments(self, parser):
-        parser.add_argument("--path", type=str, help="file path")
+        parser.add_argument(
+            "--path", type=str, help="file path", default='/app/data/'
+        )
 
     def handle(self, *args, **options):
         file_path = options["path"]
