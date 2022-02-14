@@ -10,6 +10,10 @@ class TagAdmin(admin.ModelAdmin):
     empty_value_display = "-пусто-"
 
 
+class IngredientRecipeInline(admin.TabularInline):
+    model = IngredientRecipe
+
+
 class RecipeAdmin(admin.ModelAdmin):
     list_display = (
         "pk", "name", "image", "text", "author",
@@ -19,55 +23,48 @@ class RecipeAdmin(admin.ModelAdmin):
     list_filter = ("author", "name", "tags")
     search_fields = ("name",)
     empty_value_display = "-пусто-"
+    inlines = [IngredientRecipeInline]
 
 
 class IngredientAdmin(admin.ModelAdmin):
     list_display = ("pk", "name", "measurement_unit")
-    list_filter = ("name",)
     search_fields = ("name",)
     empty_value_display = "-пусто-"
 
 
-class IngredientRecipeAdmin(admin.ModelAdmin):
-    list_display = ("pk", "ingredient", "recipe", "amount")
-    search_fields = ("recipe",)
-    empty_value_display = "-пусто-"
+class RecipeInline(admin.TabularInline):
+    model = Recipe
 
 
-class FollowAdmin(admin.ModelAdmin):
-    list_display = ("pk", "user", "author")
-    search_fields = ("name",)
-    empty_value_display = "-пусто-"
+class BasketInline(admin.StackedInline):
+    model = Basket
 
 
-class FavoriteAdmin(admin.ModelAdmin):
-    list_display = ("pk", "user", "recipe")
-    search_fields = ("pk",)
-    empty_value_display = "-пусто-"
+class FavoriteInline(admin.StackedInline):
+    model = Favorite
 
 
-class BasketAdmin(admin.ModelAdmin):
-    list_display = ("pk", "user", "recipe")
-    search_fields = ("pk",)
-    empty_value_display = "-пусто-"
+class FollowInline(admin.StackedInline):
+    model = Follow
+    fk_name = 'user'
 
 
 class UserAdmin(admin.ModelAdmin):
     list_display = (
         "pk", "first_name", "last_name",
         "email", "username", "password",
+        "get_favorite_count",
+        "get_follow_count",
+        "get_basket_count",
         "is_active"
     )
     list_filter = ('email', 'username')
     search_fields = ("first_name",)
     empty_value_display = "-пусто-"
+    inlines = [BasketInline, FavoriteInline, FollowInline]
 
 
 admin.site.register(Tag, TagAdmin)
 admin.site.register(Recipe, RecipeAdmin)
 admin.site.register(Ingredient, IngredientAdmin)
-admin.site.register(IngredientRecipe, IngredientRecipeAdmin)
-admin.site.register(Follow, FollowAdmin)
-admin.site.register(Favorite, FavoriteAdmin)
-admin.site.register(Basket, BasketAdmin)
 admin.site.register(User, UserAdmin)

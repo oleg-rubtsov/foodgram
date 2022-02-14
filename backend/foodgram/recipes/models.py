@@ -23,6 +23,18 @@ class User(AbstractUser):
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
 
+    def get_favorite_count(self):
+        return Favorite.objects.filter(user=self).count()
+    get_favorite_count.short_description = 'Количество рецептов в избранном'
+
+    def get_follow_count(self):
+        return Follow.objects.filter(user=self).count()
+    get_follow_count.short_description = 'Количество подписок'
+
+    def get_basket_count(self):
+        return Basket.objects.filter(user=self).count()
+    get_basket_count.short_description = 'Количество рецептов в корзине'
+
     def __str__(self):
         return self.username
 
@@ -109,7 +121,8 @@ class Recipe(models.Model):
 
     def get_ingredients(self):
         tmp = IngredientRecipe.objects.filter(recipe=self)
-        return "\n".join([p.ingredient.name for p in tmp])
+        return "\n".join([f'{p.ingredient.name} - {p.amount} '
+                          f'{p.ingredient.measurement_unit}' for p in tmp])
     get_ingredients.short_description = 'Ингредиенты'
 
     def get_tags(self):
@@ -125,11 +138,6 @@ class Recipe(models.Model):
 
 
 class Tag(models.Model):
-    # recipe_name = models.ManyToManyField(
-    #     Recipe,
-    #     related_name="tags",
-    #     related_query_name="tag"
-    # )
     name = models.CharField(max_length=200, verbose_name='Название')
     color = models.CharField(max_length=16, verbose_name='Цветовой HEX-код')
     slug = models.SlugField(unique=True, verbose_name='Slug')
@@ -174,7 +182,6 @@ class Favorite(models.Model):
         User, on_delete=models.CASCADE,
         related_name='user_fav',
         verbose_name='Пользователь'        
-
     )
     recipe = models.ForeignKey(
         Recipe, on_delete=models.CASCADE,
