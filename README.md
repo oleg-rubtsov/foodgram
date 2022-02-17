@@ -4,13 +4,13 @@
 
 ## Технологии:
 
-- Django Rest Framework
-- Python3
-- Docker
-- PostgreSQL
-- React
-- nginx
-- Git
+- Django Rest Framework  
+- Python3  
+- Docker  
+- PostgreSQL  
+- React  
+- nginx  
+- Git  
 
 
 ## Клонирование репозитория и основные моменты:
@@ -89,7 +89,7 @@ sudo docker exec infra_backend_1 python manage.py load_ingredients_and_tags
 ```
 # Created by:
 
-Oleg Rubtsov
-oleg.rubtsov99@gmail.com
-+7(925)669-06-11
+Oleg Rubtsov  
+oleg.rubtsov99@gmail.com  
++7(925)669-06-11  
 
